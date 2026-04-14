@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { AuthService } from '@devboard/data-access-auth';
+import { AuthServiceBase } from '@devboard/data-access-auth';
 
 @Component({
   selector: 'db-login',
@@ -91,7 +91,7 @@ import { AuthService } from '@devboard/data-access-auth';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LoginComponent {
-  protected authService = inject(AuthService);
+  protected authService = inject(AuthServiceBase);
 
   errorMessage = signal<string | null>(null);
 

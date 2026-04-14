@@ -6,22 +6,16 @@ import {
   signal,
   computed,
 } from '@angular/core';
-import { AuthService } from '@devboard/data-access-auth';
-import { SupabaseService } from '@devboard/data-access-auth';
-
-interface DashboardStats {
-  totalProjects: number;
-  activeTasks: number;
-  teamMembers: number;
-  completedTasks: number;
-}
+import { AuthServiceBase } from '@devboard/data-access-auth';
+import { ProjectStore } from '@devboard/data-access-projects';
+import { MOCK_DASHBOARD_STATS } from '@devboard/shared-models';
+import { environment } from '../../../environments/environment';
 
 interface StatCard {
   label: string;
   value: number;
   icon: string;
-  color: string;
-  change?: string;
+  change: string;
 }
 
 @Component({
@@ -33,7 +27,8 @@ interface StatCard {
       <div>
         <h1 class="text-2xl font-bold text-[var(--color-text)]">Dashboard</h1>
         <p class="mt-1 text-sm text-[var(--color-text-secondary)]">
-          Welcome back, {{ authService.user()?.user_metadata?.['full_name'] ?? 'there' }}
+          Welcome back,
+          {{ authService.user()?.user_metadata?.['full_name'] ?? 'there' }}
         </p>
       </div>
 
@@ -64,11 +59,9 @@ interface StatCard {
               <p class="mt-2 text-3xl font-bold text-[var(--color-text)]">
                 {{ card.value }}
               </p>
-              @if (card.change) {
-                <p class="mt-1 text-xs text-[var(--color-text-secondary)]">
-                  {{ card.change }}
-                </p>
-              }
+              <p class="mt-1 text-xs text-[var(--color-text-secondary)]">
+                {{ card.change }}
+              </p>
             </div>
           }
         </div>
@@ -90,82 +83,54 @@ interface StatCard {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardComponent implements OnInit {
-  protected authService = inject(AuthService);
-  private supabase = inject(SupabaseService);
+  protected authService = inject(AuthServiceBase);
+  private projectStore = inject(ProjectStore);
 
   isLoading = signal(true);
-  private stats = signal<DashboardStats>({
-    totalProjects: 0,
-    activeTasks: 0,
-    teamMembers: 0,
-    completedTasks: 0,
-  });
 
-  statCards = computed((): StatCard[] => {
-    const s = this.stats();
-    return [
-      {
-        label: 'Total Projects',
-        icon: '📁',
-        value: s.totalProjects,
-        color: 'indigo',
-        change: 'Across all workspaces',
-      },
-      {
-        label: 'Active Tasks',
-        icon: '✅',
-        value: s.activeTasks,
-        color: 'emerald',
-        change: 'In progress right now',
-      },
-      {
-        label: 'Team Members',
-        icon: '👥',
-        value: s.teamMembers,
-        color: 'blue',
-        change: 'Active collaborators',
-      },
-      {
-        label: 'Completed Tasks',
-        icon: '🏆',
-        value: s.completedTasks,
-        color: 'amber',
-        change: 'This month',
-      },
-    ];
-  });
+  private activeTasks = signal(0);
+  private teamMembers = signal(0);
+  private completedTasks = signal(0);
+
+  statCards = computed((): StatCard[] => [
+    {
+      label: 'Total Projects',
+      icon: '📁',
+      value: this.projectStore.projectCount(),
+      change: 'Across all workspaces',
+    },
+    {
+      label: 'Active Tasks',
+      icon: '✅',
+      value: this.activeTasks(),
+      change: 'In progress right now',
+    },
+    {
+      label: 'Team Members',
+      icon: '👥',
+      value: this.teamMembers(),
+      change: 'Active collaborators',
+    },
+    {
+      label: 'Completed Tasks',
+      icon: '🏆',
+      value: this.completedTasks(),
+      change: 'This month',
+    },
+  ]);
 
   async ngOnInit(): Promise<void> {
-    await this.loadStats();
+    await this.projectStore.loadProjects();
+    await this.loadOtherStats();
+    this.isLoading.set(false);
   }
 
-  private async loadStats(): Promise<void> {
-    try {
-      const [projects, profiles] = await Promise.all([
-        this.supabase.client.from('projects').select('id', { count: 'exact', head: true }),
-        this.supabase.client.from('profiles').select('id', { count: 'exact', head: true }),
-      ]);
-
-      const [activeTasks, completedTasks] = await Promise.all([
-        this.supabase.client
-          .from('tasks')
-          .select('id', { count: 'exact', head: true })
-          .neq('column_id', null),
-        this.supabase.client
-          .from('activity_log')
-          .select('id', { count: 'exact', head: true })
-          .eq('action', 'task_completed')
-          .gte('created_at', new Date(new Date().setDate(1)).toISOString()),
-      ]);
-
-      this.stats.set({
-        totalProjects: projects.count ?? 0,
-        activeTasks: activeTasks.count ?? 0,
-        teamMembers: profiles.count ?? 0,
-        completedTasks: completedTasks.count ?? 0,
-      });
-    } finally {
-      this.isLoading.set(false);
+  private async loadOtherStats(): Promise<void> {
+    if (environment.useMocks) {
+      this.activeTasks.set(MOCK_DASHBOARD_STATS.activeTasks);
+      this.teamMembers.set(MOCK_DASHBOARD_STATS.teamMembers);
+      this.completedTasks.set(MOCK_DASHBOARD_STATS.completedTasks);
     }
+    // Real Supabase implementation will go here when useMocks = false
   }
 }

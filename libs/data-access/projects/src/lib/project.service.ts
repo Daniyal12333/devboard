@@ -2,9 +2,10 @@ import { Injectable, inject } from '@angular/core';
 import { from, Observable } from 'rxjs';
 import { SupabaseService } from '@devboard/data-access-auth';
 import type { Project, CreateProjectDto, UpdateProjectDto } from '@devboard/shared-models';
+import { ProjectServiceBase } from './project-service.base';
 
-@Injectable({ providedIn: 'root' })
-export class ProjectService {
+@Injectable()
+export class ProjectService extends ProjectServiceBase {
   private supabase = inject(SupabaseService);
 
   getAll(): Observable<Project[]> {

@@ -2,7 +2,7 @@ import { computed, inject } from '@angular/core';
 import { signalStore, withState, withComputed, withMethods, patchState } from '@ngrx/signals';
 import { firstValueFrom } from 'rxjs';
 import { Project, CreateProjectDto, UpdateProjectDto } from '@devboard/shared-models';
-import { ProjectService } from './project.service';
+import { ProjectServiceBase } from './project-service.base';
 
 interface ProjectState {
   projects: Project[];
@@ -30,7 +30,7 @@ export const ProjectStore = signalStore(
       projects().filter((p) => p.status === 'active'),
     ),
   })),
-  withMethods((store, projectService = inject(ProjectService)) => ({
+  withMethods((store, projectService = inject(ProjectServiceBase)) => ({
     async loadProjects(): Promise<void> {
       patchState(store, { loading: true, error: null });
       try {

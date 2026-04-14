@@ -1,17 +1,18 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
 import type { User, AuthError } from '@supabase/supabase-js';
-import { SupabaseService } from './supabase.service';
 import { from, Observable } from 'rxjs';
+import { SupabaseService } from './supabase.service';
+import { AuthServiceBase } from './auth-service.base';
 
-export interface AuthState {
+interface AuthState {
   user: User | null;
   loading: boolean;
   initialized: boolean;
 }
 
-@Injectable({ providedIn: 'root' })
-export class AuthService {
+@Injectable()
+export class AuthService extends AuthServiceBase {
   private supabase = inject(SupabaseService);
   private router = inject(Router);
 
@@ -21,12 +22,13 @@ export class AuthService {
     initialized: false,
   });
 
-  user = computed(() => this.state().user);
-  isLoading = computed(() => this.state().loading);
-  isAuthenticated = computed(() => !!this.state().user);
-  isInitialized = computed(() => this.state().initialized);
+  readonly user = computed(() => this.state().user);
+  readonly isLoading = computed(() => this.state().loading);
+  readonly isAuthenticated = computed(() => !!this.state().user);
+  readonly isInitialized = computed(() => this.state().initialized);
 
   constructor() {
+    super();
     this.initialize();
   }
 
@@ -39,10 +41,7 @@ export class AuthService {
     }));
 
     this.supabase.client.auth.onAuthStateChange((_event, session) => {
-      this.state.update((s) => ({
-        ...s,
-        user: session?.user ?? null,
-      }));
+      this.state.update((s) => ({ ...s, user: session?.user ?? null }));
     });
   }
 
