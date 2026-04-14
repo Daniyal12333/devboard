@@ -1,0 +1,9 @@
+{
+  "name": "devboard-e2e",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/devboard-e2e/src",
+  "implicitDependencies": ["devboard"],
+  "// targets": "to see all targets run: nx show project devboard-e2e --web",
+  "targets": {}
+}

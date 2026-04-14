@@ -1,0 +1,8 @@
+{
+  "name": "@org/devboard-e2e",
+  "version": "0.0.1",
+  "private": true,
+  "nx": {
+    "name": "devboard-e2e"
+  }
+}
